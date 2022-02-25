@@ -1,0 +1,87 @@
+﻿@page "/"
+@using System.Timers
+@using AntDesign;
+@using StateHasChangedExample.Model
+@implements IDisposable
+
+<PageTitle>Index</PageTitle>
+
+<Form ValidateOnChange="true" Layout="inline"
+      Model="@personInfoBatch">
+    <ChildContent>
+        <FormItem Label="User">
+            <Select Mode="default" Style="width: 300px"
+                    Placeholder="All users or..."
+                    DataSource="@personInfoBatch.Persons"
+                    ValueName="@nameof(PersonInfo.Name)"
+                    LabelName="@nameof(PersonInfo.Name)"
+                    EnableSearch
+                    AllowClear
+                    @bind-Value="@selectedPersonInfo.Name">
+            </Select>
+        </FormItem>
+    </ChildContent>
+</Form>
+
+<Divider />
+<Spin Spinning="loading">
+    <Table @ref="jobsTable"
+           TItem="PersonInfo"
+           DataSource="@personInfoBatch.Persons"
+           HidePagination
+           PageSize="1">
+        <Column Title="Name" Field="@context.Name" />
+        <Column Title="Age" Field="@context.Age" />
+
+        <ActionColumn>
+            <Space>
+                <SpaceItem>
+                    @*This cross assignment of OK<->Cancel behavior and text is intentional and is done due to a lack of API
+                        to alter the Cancel button's type from default to primary (highlighted and captures Enter keystroke).*@
+                    <Popconfirm Title="Are you sure you want to do this?"
+                                OnCancel="async () => await DoSomething()"
+                                OkText="No"
+                                CancelText="Yes">
+                        <Button  Danger>Cancel</Button>
+                    </Popconfirm>
+                </SpaceItem>
+                <SpaceItem><Button OnClick='async () => await DoSomething()'>Do Something</Button></SpaceItem>
+            </Space>
+        </ActionColumn>
+
+    </Table>
+</Spin>
+
+@code {
+
+    ITable jobsTable;
+    bool loading;
+    Timer? elapsedRefreshTimer;
+    PersonInfoBatch personInfoBatch = new PersonInfoBatch { Persons = new List<PersonInfo> { new PersonInfo { Name = "Bob", Age = 30 }}};
+    PersonInfo selectedPersonInfo = new PersonInfo();
+
+    protected override async Task OnInitializedAsync()
+    {
+        elapsedRefreshTimer = new Timer(1000);
+        elapsedRefreshTimer.Elapsed += (sender, eventArgs) => RefreshTimerElapsed();
+        elapsedRefreshTimer.Start();
+
+        await DoSomething();
+    }
+
+    private async Task DoSomething()
+    {
+        //elapsedRefreshTimer?.Start();
+    }
+
+    private void RefreshTimerElapsed()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        elapsedRefreshTimer?.Dispose();
+        elapsedRefreshTimer = null;
+    }
+}
