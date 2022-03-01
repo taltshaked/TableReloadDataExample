@@ -25,11 +25,11 @@
 
 <Divider />
 <Spin Spinning="loading">
-    <Table @ref="jobsTable"
+    <Table @ref="dataTable"
            TItem="PersonInfo"
            DataSource="@personInfoBatch.Persons"
            HidePagination
-           PageSize="1">
+           PageSize="10">
         <Column Title="Name" Field="@context.Name" />
         <Column Title="Age" Field="@context.Age" />
 
@@ -54,34 +54,42 @@
 
 @code {
 
-    ITable jobsTable;
+    ITable? dataTable;
     bool loading;
+    Timer? searchTimer; // Timer that triggers a search
     Timer? elapsedRefreshTimer;
-    PersonInfoBatch personInfoBatch = new PersonInfoBatch { Persons = new List<PersonInfo> { new PersonInfo { Name = "Bob", Age = 30 }}};
+    PersonInfoBatch personInfoBatch = new PersonInfoBatch { Persons = new List<PersonInfo> { new PersonInfo { Name = "Bob", Age = 30 }, new PersonInfo { Name = "Mike", Age = 40 }}};
     PersonInfo selectedPersonInfo = new PersonInfo();
 
     protected override async Task OnInitializedAsync()
     {
-        elapsedRefreshTimer = new Timer(1000);
-        elapsedRefreshTimer.Elapsed += (sender, eventArgs) => RefreshTimerElapsed();
-        elapsedRefreshTimer.Start();
-
         await DoSomething();
+
+        searchTimer = new Timer(10000);
+        searchTimer.Elapsed += (sender, eventArgs) => InvokeAsync(() => DoSomething());
+        searchTimer.Start();
     }
 
     private async Task DoSomething()
     {
-        //elapsedRefreshTimer?.Start();
+        elapsedRefreshTimer?.Dispose();
+        elapsedRefreshTimer = new Timer(1000);
+        elapsedRefreshTimer.Elapsed += (sender, eventArgs) => RefreshTimerElapsed();
+        elapsedRefreshTimer.Start();
     }
 
     private void RefreshTimerElapsed()
     {
-        StateHasChanged();
+        personInfoBatch.Persons[0].Age++;
+        //StateHasChanged(); // Calling this method instead of dataTable.ReloadData() doesn't reproduce the UI issue
+        dataTable.ReloadData(); // Calling this method does reproduce the UI issue of PopConfirm disappearing
     }
 
     public void Dispose()
     {
         elapsedRefreshTimer?.Dispose();
         elapsedRefreshTimer = null;
+        searchTimer?.Dispose();
+        searchTimer = null;
     }
 }
