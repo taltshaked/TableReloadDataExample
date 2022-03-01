@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "StateHasChangedExample": {
+    "TableReloadDataExample": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace StateHasChangedExample.Model
+namespace TableReloadDataExample.Model
 {
     public class PersonInfoBatch
     {

@@ -1,4 +1,4 @@
-﻿namespace StateHasChangedExample.Model
+﻿namespace TableReloadDataExample.Model
 {
     public class PersonInfo
     {
