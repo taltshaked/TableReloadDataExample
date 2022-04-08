@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "TableReloadDataExample": {
+    "AntDesignExample": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

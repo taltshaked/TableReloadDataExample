@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 
-namespace TableReloadDataExample.Model
+namespace AntDesignExample.Model
 {
     public class PersonInfoBatch
     {
-        public List<PersonInfo>? Persons { get; set; }
+        public PersonInfo[]? Persons { get; set; }
     }
 }
