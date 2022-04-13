@@ -43,9 +43,17 @@
     <FormItem Label="Use local time">
         <Switch @bind-Value="@useLocalTime" />
     </FormItem>
+    <FormItem>
+        <Divider Type="DirectionVHType.Vertical" />
+    </FormItem>
+    <FormItem>
+        <Tooltip Title="@("More filters")">
+            <Button Type="@ButtonType.Default" Icon="ellipsis" OnClick="@OnClick" />
+        </Tooltip>
+    </FormItem>
 </Form>
-<Divider Type="DirectionVHType.Horizontal" />
-<Form ValidateOnChange="false" Layout="inline"
+<Divider Type="DirectionVHType.Horizontal" Style="@moreFiltersVisibility" />
+<Form Style="@moreFiltersVisibility" ValidateOnChange="false" Layout="inline"
       Model="@personInfoBatch">
     <FormItem Label="Dates">
         <RangePicker TValue="DateTime[]" @bind-Value="@dates" OnChange="OnTimeRangeChange" />
@@ -73,8 +81,6 @@
     </FormItem>
 </Form>
 
-@*<Button Type="@ButtonType.Primary" OnClick="@OnClick">Calc</Button>*@
-
 @code {
     PersonInfo[] source = Array.Empty<PersonInfo>();
     PersonInfoUI[] sourceUI => source.Select(s => new PersonInfoUI(s)).ToArray();
@@ -87,8 +93,10 @@
     bool excludeScheduledJobs;
     bool hideCompleted;
     bool useLocalTime;
+    bool showMoreFilters = false;
     bool canViewOtherJobs = true;
     string usersLabel => canViewOtherJobs ? "Users" : "User";
+    string moreFiltersVisibility => $"{(showMoreFilters ? "" : "display: none")}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,6 +158,6 @@
 
     private async Task OnClick()
     {
-        await Task.Delay(8000);
+        showMoreFilters = !showMoreFilters;
     }
 }
