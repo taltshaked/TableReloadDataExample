@@ -7,7 +7,7 @@
 
 <Form ValidateOnChange="true" Layout="inline"
       Model="@personInfoBatch">
-    <FormItem Label="User">
+    <FormItem Label="@usersLabel">
         <Select Mode="multiple"
                 DataSource="@sourceUI"
                 Placeholder="Please select"
@@ -28,19 +28,19 @@
     <FormItem>
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
-    <FormItem Label="No scheduled">
+    <FormItem Label="No scheduled jobs">
         <Switch @bind-Value="@excludeScheduledJobs" />
     </FormItem>
     <FormItem>
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
-    <FormItem Label="In progress">
+    <FormItem Label="Only in progress">
         <Switch @bind-Value="@hideCompleted" />
     </FormItem>
     <FormItem>
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
-    <FormItem Label="Local time">
+    <FormItem Label="Use local time">
         <Switch @bind-Value="@useLocalTime" />
     </FormItem>
 </Form>
@@ -54,7 +54,7 @@
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
     <Text Style="margin-right: 7.5px; margin-top: 5px">Job ID:</Text>
-    <Tooltip Title="@("Enter job ID and hit Enter")">
+    <Tooltip Title="@("Enter job ID and hit Enter or Tab")">
         <AntDesign.InputNumber TValue="int?" ValueChanged="@(v => OnValueChanged(v))" Value="@jobId" Style="margin-right: 8px"></AntDesign.InputNumber>
     </Tooltip>
     <FormItem>
@@ -87,6 +87,8 @@
     bool excludeScheduledJobs;
     bool hideCompleted;
     bool useLocalTime;
+    bool canViewOtherJobs = true;
+    string usersLabel => canViewOtherJobs ? "Users" : "User";
 
     protected override async Task OnInitializedAsync()
     {
