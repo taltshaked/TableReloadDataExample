@@ -46,11 +46,9 @@
     <FormItem>
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
-    <FormItem>
-        <Tooltip Title="@("More filters")">
-            <Button Type="@ButtonType.Default" Icon="ellipsis" OnClick="@OnClick" />
-        </Tooltip>
-    </FormItem>
+    <Tooltip Title="@("More filters")">
+        <Button Type="@ButtonType.Default" Icon="ellipsis" OnClick="@OnToggleVisibility" />
+    </Tooltip>
 </Form>
 <Divider Type="DirectionVHType.Horizontal" Style="@moreFiltersVisibility" />
 <Form Style="@moreFiltersVisibility" ValidateOnChange="false" Layout="inline"
@@ -79,6 +77,14 @@
                 AllowClear>
         </Select>
     </FormItem>
+    <FormItem>
+        <Divider Type="DirectionVHType.Vertical" />
+    </FormItem>
+    <FormItem>
+        <Tooltip Title="@("More filters")">
+            <Button Type="@ButtonType.Default" OnClick="@OnCalcDates">Calc</Button>
+        </Tooltip>
+    </FormItem>
 </Form>
 
 @code {
@@ -93,7 +99,7 @@
     bool excludeScheduledJobs;
     bool hideCompleted;
     bool useLocalTime;
-    bool showMoreFilters = false;
+    bool showMoreFilters = true;
     bool canViewOtherJobs = true;
     string usersLabel => canViewOtherJobs ? "Users" : "User";
     string moreFiltersVisibility => $"{(showMoreFilters ? "" : "display: none")}";
@@ -118,23 +124,23 @@
 
     private void OnSelectedItemsChangedHandler(IEnumerable<PersonInfo> values)
     {
-        if (values != null)
-            Console.WriteLine($"selected: ${string.Join(",", values)}");
     }
 
     private void OnSelectedItemsChangedHandler(IEnumerable<int> values)
     {
-        if (values != null)
-            Console.WriteLine($"selected: ${string.Join(",", values)}");
     }
 
-    public Task OnValueChanged(int? value)
+    private Task OnValueChanged(int? value)
     {
         if (value.HasValue && value > 0)
         {
             if (jobIds == null)
             {
                 jobIds = Array.Empty<int>();
+            }
+            if (selectedJobIds == null)
+            {
+                selectedJobIds = Array.Empty<int>();
             }
             if (!Enumerable.Contains<int>(jobIds, (int)value))
             {
@@ -146,9 +152,8 @@
             }
         }
 
-        // This method made public to facilitate testing
+        StateHasChanged();
 
-        StateHasChanged(); // Update config errors
         return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
     }
 
@@ -156,8 +161,20 @@
     {
     }
 
-    private async Task OnClick()
+    private Task OnToggleVisibility()
     {
         showMoreFilters = !showMoreFilters;
+
+        return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
+    }
+
+    private Task OnCalcDates()
+    {
+        if (dates[1] != DateTime.MinValue)
+        {
+            dates[1] = dates[1] + TimeSpan.FromSeconds(86399);
+        }
+
+        return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
     }
 }
