@@ -1,68 +1,82 @@
 ﻿@page "/"
 @using System.Timers
 @using AntDesign;
+@using AntDesignExample.Helpers
 @using AntDesignExample.Model
 
 <PageTitle>Index</PageTitle>
-
 <Form ValidateOnChange="true" Layout="inline"
       Model="@personInfoBatch">
-    <FormItem Label="@usersLabel">
-        <Select Mode="multiple"
-                DataSource="@sourceUI"
-                Placeholder="Please select"
-                @bind-Values="@selectedPersons"
-                ValueName="@nameof(PersonInfoUI.Id)"
-                LabelName="@nameof(PersonInfoUI.Name)"
-                GroupName="@nameof(PersonInfoUI.Company)"
-                TItemValue="string"
-                TItem="PersonInfoUI"
-                OnSelectedItemsChanged="OnSelectedItemsChangedHandler"
-                Style="width: 200px;"
-                SortByLabel="@SortDirection.Ascending"
-                SortByGroup="@SortDirection.Ascending"
-                EnableSearch
-                AllowClear>
+    <Validator>
+        <DelegatingCustomValidator OnFieldChanged="async () => await Search()" />
+    </Validator>
+    <ChildContent>
+        <FormItem Label="@usersLabel">
+            <Select Mode="multiple"
+                    DataSource="@sourceUI"
+                    Placeholder="Please select"
+                    @bind-Values="@selectedPersons"
+                    ValueName="@nameof(PersonInfoUI.Id)"
+                    LabelName="@nameof(PersonInfoUI.Name)"
+                    GroupName="@nameof(PersonInfoUI.Company)"
+                    TItemValue="string"
+                    TItem="PersonInfoUI"
+                    OnSelectedItemsChanged="OnSelectedItemsChangedHandler"
+                    Style="width: 200px;"
+                    SortByLabel="@SortDirection.Ascending"
+                    SortByGroup="@SortDirection.Ascending"
+                    EnableSearch
+                    AllowClear>
+            </Select>
+        </FormItem>
+        <FormItem>
+            <Divider Type="DirectionVHType.Vertical" />
+        </FormItem>
+        <FormItem Label="No scheduled jobs">
+            <Switch @bind-Value="@excludeScheduledJobs" />
+        </FormItem>
+        <FormItem>
+            <Divider Type="DirectionVHType.Vertical" />
+        </FormItem>
+        <FormItem Label="Only in progress">
+            <Switch @bind-Value="@hideCompleted" />
+        </FormItem>
+        <FormItem>
+            <Divider Type="DirectionVHType.Vertical" />
+        </FormItem>
+        <FormItem Label="Use local time">
+            <Switch @bind-Value="@useLocalTime" />
+        </FormItem>
+        <FormItem>
+            <Divider Type="DirectionVHType.Vertical" />
+        </FormItem>
+        <Button Type="@ButtonType.Default" OnClick="@OnToggleVisibility" Style="width: 120px;">@(showMoreFilters ? "Less Filters" : "More Filters")</Button>
+    </ChildContent>
+</Form>
+<Divider Type="DirectionVHType.Horizontal" Style="@moreFiltersVisibility" />
+<Form Style="@moreFiltersVisibility" ValidateOnChange="true" Layout="inline"
+      Model="@personInfoBatch">
+      <Validator>
+        <DelegatingCustomValidator OnFieldChanged="async () => await Search()" />
+    </Validator>
+    <ChildContent>
+    <FormItem Label="In the last">
+        <Select DataSource="@Timeframe.Timeframes"
+                @bind-Value="@selectedTimeframe"
+                ValueName="@nameof(Timeframe.Duration)"
+                LabelName="@nameof(Timeframe.Name)"
+                TItemValue="Timeframe.DurationType"
+                TItem="Timeframe"
+                OnSelectedItemChanged="OnSelectedItemChangedHandler"
+                Style="width: 120px;"
+                EnableSearch>
         </Select>
     </FormItem>
     <FormItem>
         <Divider Type="DirectionVHType.Vertical" />
     </FormItem>
-    <FormItem Label="No scheduled jobs">
-        <Switch @bind-Value="@excludeScheduledJobs" />
-    </FormItem>
-    <FormItem>
-        <Divider Type="DirectionVHType.Vertical" />
-    </FormItem>
-    <FormItem Label="Only in progress">
-        <Switch @bind-Value="@hideCompleted" />
-    </FormItem>
-    <FormItem>
-        <Divider Type="DirectionVHType.Vertical" />
-    </FormItem>
-    <FormItem Label="Use local time">
-        <Switch @bind-Value="@useLocalTime" />
-    </FormItem>
-    <FormItem>
-        <Divider Type="DirectionVHType.Vertical" />
-    </FormItem>
-    <Tooltip Title="@("More filters")">
-        <Button Type="@ButtonType.Default" Icon="ellipsis" OnClick="@OnToggleVisibility" />
-    </Tooltip>
-</Form>
-<Divider Type="DirectionVHType.Horizontal" Style="@moreFiltersVisibility" />
-<Form Style="@moreFiltersVisibility" ValidateOnChange="false" Layout="inline"
-      Model="@personInfoBatch">
-    <FormItem Label="Dates">
-        <RangePicker TValue="DateTime[]" @bind-Value="@dates" OnChange="OnTimeRangeChange" />
-    </FormItem>
-    <FormItem>
-        <Divider Type="DirectionVHType.Vertical" />
-    </FormItem>
     <Text Style="margin-right: 7.5px; margin-top: 5px">Job ID:</Text>
-    <Tooltip Title="@("Enter job ID and hit Enter or Tab")">
-        <AntDesign.InputNumber TValue="int?" ValueChanged="@(v => OnValueChanged(v))" Value="@jobId" Style="margin-right: 8px"></AntDesign.InputNumber>
-    </Tooltip>
+    <Input TValue="string" Value="@jobIdStr" OnInput="@(v => OnInput(v))" OnPressEnter="@(e => OnPressEnter(e))" Placeholder="Enter a job ID" Style="width: 120px;"></Input>
     <FormItem>
         <Select Mode="multiple"
                 DataSource="@jobIds"
@@ -85,6 +99,7 @@
             <Button Type="@ButtonType.Default" OnClick="@OnCalcDates">Calc</Button>
         </Tooltip>
     </FormItem>
+    </ChildContent>
 </Form>
 
 @code {
@@ -92,10 +107,11 @@
     PersonInfoUI[] sourceUI => source.Select(s => new PersonInfoUI(s)).ToArray();
     IEnumerable<string> selectedPersons = Array.Empty<string>();
     PersonInfoBatch personInfoBatch = new PersonInfoBatch { Persons = new[] { new PersonInfo { Company = "IBM", Name = "Bob", Age = 30 }, new PersonInfo { Company = "Apple", Name = "Mike", Age = 40 } } };
-    int? jobId;
+    string jobIdStr = "123";
     IEnumerable<int> jobIds = Array.Empty<int>();
     IEnumerable<int> selectedJobIds = Array.Empty<int>();
-    DateTime[] dates = new[] { DateTime.Today, DateTime.Today };
+    Timeframe[] timeframes = Timeframe.Timeframes;
+    Timeframe.DurationType selectedTimeframe = Timeframe.DurationType.All;
     bool excludeScheduledJobs;
     bool hideCompleted;
     bool useLocalTime;
@@ -122,6 +138,10 @@
         source = persons.ToArray();
     }
 
+    private async Task Search(bool noSpinner = false)
+    {
+    }
+
     private void OnSelectedItemsChangedHandler(IEnumerable<PersonInfo> values)
     {
     }
@@ -130,29 +150,55 @@
     {
     }
 
-    private Task OnValueChanged(int? value)
+    private void OnSelectedItemChangedHandler(Timeframe value)
     {
-        if (value.HasValue && value > 0)
+        var from = value.FromDateAndTime;
+        var to = value.UntilDateAndTime;
+        var diff = to - from;
+    }
+
+    private Task OnInput(ChangeEventArgs args)
+    {
+        var value = args.Value as string;
+        var result = 0;
+        if (int.TryParse(value, out result))
         {
-            if (jobIds == null)
-            {
-                jobIds = Array.Empty<int>();
-            }
-            if (selectedJobIds == null)
-            {
-                selectedJobIds = Array.Empty<int>();
-            }
-            if (!Enumerable.Contains<int>(jobIds, (int)value))
-            {
-                jobIds = jobIds.Append((int)value);
-            }
-            if (!Enumerable.Contains<int>(selectedJobIds, (int)value))
-            {
-                selectedJobIds = selectedJobIds.Append((int)value);
-            }
+            jobIdStr = value.Trim();
+        }
+
+        return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
+    }
+
+    private Task OnPressEnter(KeyboardEventArgs args)
+    {
+        int jobId;
+        if (!int.TryParse(jobIdStr, out jobId) || jobId < 1)
+        {
+            jobIdStr = string.Empty;
+
+            return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
+        }
+
+        if (jobIds == null)
+        {
+            jobIds = Array.Empty<int>();
+        }
+        if (selectedJobIds == null)
+        {
+            selectedJobIds = Array.Empty<int>();
+        }
+        if (!Enumerable.Contains<int>(jobIds, (int)jobId))
+        {
+            jobIds = jobIds.Append((int)jobId);
+        }
+        if (!Enumerable.Contains<int>(selectedJobIds, (int)jobId))
+        {
+            selectedJobIds = selectedJobIds.Append((int)jobId);
         }
 
         StateHasChanged();
+
+        jobIdStr = string.Empty;
 
         return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
     }
@@ -170,11 +216,6 @@
 
     private Task OnCalcDates()
     {
-        if (dates[1] != DateTime.MinValue)
-        {
-            dates[1] = dates[1] + TimeSpan.FromSeconds(86399);
-        }
-
         return Task.CompletedTask; // This method must return Task to be used as the OnChange handler
     }
 }
